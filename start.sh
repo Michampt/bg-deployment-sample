@@ -1,19 +1,52 @@
 #! /bin/bash
 
-docker build -t sample:v1 --build-arg VERSION=v1 .
-docker build -t sample:v2 --build-arg VERSION=v2 .
+function longPoll() {
+	echo "" > result
+	for i in {1..20}; do
+		curl -s $1/version >> result
+		sleep 1
+	done
+}
 
-curl -L https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 -o minikube
+echo "Downloading MiniKube"
+curl -L https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 -o minikube > /dev/null
 
+echo "Starting MiniKube"
 chmod +x minikube
-./minikube start
-./minikube kubectl -- get po -A
+./minikube start --force > /dev/null
 
-kubectl apply -f bg.yaml
+echo "Building sample docker images"
+eval $(./minikube docker-env)
+docker build -t sample:v1 --build-arg VERSION=v1 . > /dev/null
+docker build -t sample:v2 --build-arg VERSION=v2 . > /dev/null
 
-cp app.yaml app-temp.yaml
-sed -i 's/\$VER/v1/g' app-temp.yaml
-sed -i 's/\$COLOR/blue/g' app-temp.yaml
+echo "Deploying applications"
+./minikube kubectl -- apply -f app.yaml
 
-kubectl apply -f app-temp.yaml
-rm -f app-temp.yaml
+echo "Starting the LB initially pointing to Blue (v1)"
+./swap.sh blue
+
+URL=$(./minikube service bg-sample --url)
+
+echo "Polling app"
+longPoll $URL &
+POLL_PID=$!
+
+# Give the poll some time to have some output
+sleep 5
+
+# Swap to the green deployment
+echo "Swapping to green"
+./swap.sh green
+sleep 5
+
+# Swap back to blue as if it was a rollback
+echo "Rolling back to blue"
+./swap.sh blue
+
+# Wait until the polling is done
+tail --pid=$POLL_PID -f /dev/null
+
+echo "Viewing results"
+
+cat ./result

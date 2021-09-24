@@ -24,6 +24,6 @@ func main() {
 }
 
 func version(w http.ResponseWriter, r *http.Request) {
-	response := os.Getenv("VERSION")
+	response := os.Getenv("VERSION") + "\n"
 	w.Write([]byte(response))
 }

@@ -1,21 +1,44 @@
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  name: $COLOR
+  name: blue
   labels:
-    app: $COLOR
+    app: blue
 spec:
   replicas: 3
   selector:
-    app: $COLOR
+    app: blue
   template:
     metadata:
       labels:
-        app: $COLOR
+        app: blue
     spec:
       containers:
-        - name: $COLOR
-          image: sample:$VER
+        - name: blue
+          image: sample:v1
+          ports:
+            - name: http-server
+              containerPort: 80
+          imagePullPolicy: Never
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: green
+  labels:
+    app: green
+spec:
+  replicas: 3
+  selector:
+    app: green
+  template:
+    metadata:
+      labels:
+        app: green
+    spec:
+      containers:
+        - name: green
+          image: sample:v2
           ports:
             - name: http-server
               containerPort: 80
