@@ -3,11 +3,11 @@
 docker build -t sample:v1 --build-arg VERSION=v1 .
 docker build -t sample:v2 --build-arg VERSION=v2 .
 
-if [ "$OS" == "Windows_NT" ]; then
-    curl -Lo minikube.exe https://github.com/kubernetes/minikube/releases/latest/download/minikube-windows-amd64.exe
-    ./minikube.exe start
-    ./minikube.exe kubectl -- get po -A
-fi
+curl -L https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 -o minikube
+
+chmod +x minikube
+./minikube start
+./minikube kubectl -- get po -A
 
 kubectl apply -f bg.yaml
 
